@@ -771,13 +771,14 @@ javascript: (function tkbModule() {
                     <div style="overflow-x: auto;">
                         <table id="gpaTkbGrid" style="width: 100%; table-layout: fixed; border-collapse: collapse; background: #fff; text-align: center; font-size: 14px; border: 1px solid #CCCCCC;">
                             <colgroup>
-                                <col style="width: 70px;">
-                                <col style="width: 15.5%;">
-                                <col style="width: 15.5%;">
-                                <col style="width: 15.5%;">
-                                <col style="width: 15.5%;">
-                                <col style="width: 15.5%;">
-                                <col style="width: 15.5%;">
+                                <col style="width: 65px;">
+                                <col style="width: 13.3%;">
+                                <col style="width: 13.3%;">
+                                <col style="width: 13.3%;">
+                                <col style="width: 13.3%;">
+                                <col style="width: 13.3%;">
+                                <col style="width: 13.3%;">
+                                <col style="width: 13.3%;">
                             </colgroup>
                             <thead>
                                 <tr style="background: #f2f2f2; height: 28px; font-weight: normal;">
@@ -788,6 +789,7 @@ javascript: (function tkbModule() {
                                     <th style="border: 1px solid #CCCCCC; font-weight: normal;">Thứ 5</th>
                                     <th style="border: 1px solid #CCCCCC; font-weight: normal;">Thứ 6</th>
                                     <th style="border: 1px solid #CCCCCC; font-weight: normal;">Thứ 7</th>
+                                    <th style="border: 1px solid #CCCCCC; font-weight: normal; color: red;">Chủ Nhật</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
@@ -842,10 +844,10 @@ javascript: (function tkbModule() {
             let selectedCampus = $('#gpaTkbCampus').val() || 'LT';
             let maxPeriods = (selectedCampus === 'NVC') ? 15 : 10;
 
-            // Build Grid Map for dynamic maxPeriods and Days 2-7
+            // Build Grid Map for dynamic maxPeriods and Days 2-8
             let gridMap = {};
             let occupied = {};
-            for (let d = 2; d <= 7; d++) {
+            for (let d = 2; d <= 8; d++) {
                 gridMap[d] = {};
                 occupied[d] = {};
                 for (let p = 1; p <= maxPeriods; p++) {
@@ -861,7 +863,7 @@ javascript: (function tkbModule() {
                 // 1. Lecture Schedule
                 let schedules = parseSchedule(item.scheduleStr);
                 schedules.forEach(s => {
-                    if (s.dayNum >= 2 && s.dayNum <= 7) {
+                    if (s.dayNum >= 2 && s.dayNum <= 8) {
                         let start = Math.max(1, Math.floor(s.startPeriod));
                         let end = Math.min(maxPeriods, Math.floor(s.endPeriod));
                         let span = Math.max(1, end - start + 1);
@@ -880,7 +882,7 @@ javascript: (function tkbModule() {
                 if (item.selectedTH && item.selectedTH.scheduleStr) {
                     let thSchedules = parseSchedule(item.selectedTH.scheduleStr);
                     thSchedules.forEach(sTH => {
-                        if (sTH.dayNum >= 2 && sTH.dayNum <= 7) {
+                        if (sTH.dayNum >= 2 && sTH.dayNum <= 8) {
                             let start = Math.max(1, Math.floor(sTH.startPeriod));
                             let end = Math.min(maxPeriods, Math.floor(sTH.endPeriod));
                             let span = Math.max(1, end - start + 1);
@@ -900,7 +902,7 @@ javascript: (function tkbModule() {
                 if (item.selectedBT && item.selectedBT.scheduleStr) {
                     let btSchedules = parseSchedule(item.selectedBT.scheduleStr);
                     btSchedules.forEach(sBT => {
-                        if (sBT.dayNum >= 2 && sBT.dayNum <= 7) {
+                        if (sBT.dayNum >= 2 && sBT.dayNum <= 8) {
                             let start = Math.max(1, Math.floor(sBT.startPeriod));
                             let end = Math.min(maxPeriods, Math.floor(sBT.endPeriod));
                             let span = Math.max(1, end - start + 1);
@@ -925,7 +927,7 @@ javascript: (function tkbModule() {
                     <td style="border: 1px solid #CCCCCC; font-weight: normal; background: #fafafa; padding: 4px; font-size: 11px; line-height: 1.2;">
                         Tiết ${p}<br><span style="color: #666; font-size: 9px; font-weight: normal;">${timeStr}</span>
                     </td>`;
-                for (let d = 2; d <= 7; d++) {
+                for (let d = 2; d <= 8; d++) {
                     if (occupied[d][p]) {
                         // Covered by a previous rowspan -> skip cell
                         continue;
