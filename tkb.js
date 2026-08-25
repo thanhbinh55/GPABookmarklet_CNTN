@@ -127,6 +127,38 @@ javascript: (function tkbModule() {
             { bg: "#fee2e2", text: "#991b1b", roomText: "#dc2626" }  // Light Crimson
         ];
 
+        const PERIOD_TIMES = {
+            LT: {
+                1: "07:30-08:20",
+                2: "08:20-09:10",
+                3: "09:10-10:00",
+                4: "10:10-11:00",
+                5: "11:00-11:50",
+                6: "12:40-13:30",
+                7: "13:30-14:20",
+                8: "14:20-15:10",
+                9: "15:20-16:10",
+                10: "16:10-17:00"
+            },
+            NVC: {
+                1: "07:00-07:50",
+                2: "07:50-08:40",
+                3: "08:40-09:30",
+                4: "09:40-10:30",
+                5: "10:30-11:20",
+                6: "11:20-12:10",
+                7: "12:50-13:40",
+                8: "13:40-14:30",
+                9: "14:30-15:20",
+                10: "15:30-16:20",
+                11: "16:20-17:10",
+                12: "17:10-18:00",
+                13: "18:00-18:50",
+                14: "18:50-19:40",
+                15: "19:40-20:30"
+            }
+        };
+
         // Parse schedule string e.g. "T5(1-4)-P.Thông báo sau" or "T2(6-9)-P.cs2:NhaThiDau_K"
         function parseSchedule(str) {
             if (!str) return [];
@@ -697,12 +729,35 @@ javascript: (function tkbModule() {
         // Render Weekly Timetable Grid & Summary Panel
         function renderTkbPanel() {
             if ($('#gpaTkbFieldSet').length === 0) {
+                // Auto-detect campus from opened classes list
+                let defaultCampus = 'LT';
+                $('#tbPDTKQ tbody tr').each(function () {
+                    let text = $(this).find('td').eq(10).text().trim().toUpperCase();
+                    if (text === 'NVC' || text.includes('NGUYỄN VĂN CỪ') || text.includes('NVC')) {
+                        defaultCampus = 'NVC';
+                        return false; // break
+                    }
+                });
+
+                let savedMaxCredits = localStorage.getItem('gpa_tkb_max_credits') || '25';
+                let savedCampus = localStorage.getItem('gpa_tkb_campus') || defaultCampus;
+
                 let panelHtml = `
                 <fieldset id="gpaTkbFieldSet" style="margin-top: 15px; margin-bottom: 15px; border: 1px solid #CCCCCC; padding: 10px 15px; background: menu;">
                     <legend>Thời khóa biểu</legend>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <div id="gpaTkbSummary" style="font-size: 14px; color: #000; font-weight: normal;">
-                            Đã chọn: <span id="gpaTkbClassCount" style="font-weight: bold;">0 lớp học</span> | Tổng số tín chỉ: <span id="gpaTkbTotalCredits" style="font-weight: bold;">0 TC</span>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
+                        <div id="gpaTkbSummary" style="font-size: 14px; color: #000; font-weight: normal; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                            <span>Đã chọn: <span id="gpaTkbClassCount" style="font-weight: bold;">0 lớp học</span> | Tổng số tín chỉ: <span id="gpaTkbTotalCredits" style="font-weight: bold;">0 TC</span></span>
+                            <span style="border-left: 1px solid #ccc; padding-left: 10px; margin-left: 10px; display: inline-flex; align-items: center; gap: 5px;">
+                                Cơ sở:
+                                <select id="gpaTkbCampus" style="padding: 2px 4px; border: 1px solid #ccc; border-radius: 3px; font-size: 13px; font-family: inherit; background: #fff; vertical-align: middle;">
+                                    <option value="LT">Linh Trung (10 tiết)</option>
+                                    <option value="NVC">Nguyễn Văn Cừ (15 tiết)</option>
+                                </select>
+                            </span>
+                            <span style="border-left: 1px solid #ccc; padding-left: 10px; margin-left: 10px; display: inline-flex; align-items: center; gap: 5px;">
+                                Số TC tối đa: <input type="number" id="gpaTkbMaxCredits" value="${savedMaxCredits}" min="1" max="100" style="width: 45px; text-align: center; border: 1px solid #ccc; border-radius: 3px; padding: 2px; font-size: 13px; font-family: inherit; background: #fff; vertical-align: middle;" /> TC
+                            </span>
                         </div>
                         <div id="gpaTkbActions">
                             <div id="gpaTkbBtnReset" class="ob_iBCN" style="width: 70px; display: inline-block; cursor: pointer; vertical-align: middle;">
@@ -716,13 +771,13 @@ javascript: (function tkbModule() {
                     <div style="overflow-x: auto;">
                         <table id="gpaTkbGrid" style="width: 100%; table-layout: fixed; border-collapse: collapse; background: #fff; text-align: center; font-size: 14px; border: 1px solid #CCCCCC;">
                             <colgroup>
-                                <col style="width: 50px;">
-                                <col style="width: 15.83%;">
-                                <col style="width: 15.83%;">
-                                <col style="width: 15.83%;">
-                                <col style="width: 15.83%;">
-                                <col style="width: 15.83%;">
-                                <col style="width: 15.83%;">
+                                <col style="width: 70px;">
+                                <col style="width: 15.5%;">
+                                <col style="width: 15.5%;">
+                                <col style="width: 15.5%;">
+                                <col style="width: 15.5%;">
+                                <col style="width: 15.5%;">
+                                <col style="width: 15.5%;">
                             </colgroup>
                             <thead>
                                 <tr style="background: #f2f2f2; height: 28px; font-weight: normal;">
@@ -740,6 +795,21 @@ javascript: (function tkbModule() {
                     </div>
                 </fieldset>`;
                 $(panelHtml).insertBefore('#ctl00_ContentPlaceHolder1_ctl00_fs_DS_LopMo');
+
+                $('#gpaTkbCampus').val(savedCampus);
+
+                $(document).off('change', '#gpaTkbCampus');
+                $(document).on('change', '#gpaTkbCampus', function () {
+                    let val = $(this).val();
+                    localStorage.setItem('gpa_tkb_campus', val);
+                    renderTkbPanel();
+                });
+
+                $(document).off('input change', '#gpaTkbMaxCredits');
+                $(document).on('input change', '#gpaTkbMaxCredits', function () {
+                    let val = parseInt($(this).val()) || 25;
+                    localStorage.setItem('gpa_tkb_max_credits', val);
+                });
             }
 
             let selectedList = Object.values(window._gpaSelectedClasses);
@@ -768,13 +838,17 @@ javascript: (function tkbModule() {
             $('#gpaTkbClassCount').text(selectedList.length + ' lớp học');
             $('#gpaTkbTotalCredits').text(totalCredits + ' TC');
 
-            // Build Grid Map for 10 Periods (Tiết 1-10) and Days 2-7
+            // Determine dynamic maxPeriods and times based on selected campus
+            let selectedCampus = $('#gpaTkbCampus').val() || 'LT';
+            let maxPeriods = (selectedCampus === 'NVC') ? 15 : 10;
+
+            // Build Grid Map for dynamic maxPeriods and Days 2-7
             let gridMap = {};
             let occupied = {};
             for (let d = 2; d <= 7; d++) {
                 gridMap[d] = {};
                 occupied[d] = {};
-                for (let p = 1; p <= 10; p++) {
+                for (let p = 1; p <= maxPeriods; p++) {
                     occupied[d][p] = false;
                 }
             }
@@ -789,7 +863,7 @@ javascript: (function tkbModule() {
                 schedules.forEach(s => {
                     if (s.dayNum >= 2 && s.dayNum <= 7) {
                         let start = Math.max(1, Math.floor(s.startPeriod));
-                        let end = Math.min(10, Math.floor(s.endPeriod));
+                        let end = Math.min(maxPeriods, Math.floor(s.endPeriod));
                         let span = Math.max(1, end - start + 1);
 
                         gridMap[s.dayNum][start] = {
@@ -808,7 +882,7 @@ javascript: (function tkbModule() {
                     thSchedules.forEach(sTH => {
                         if (sTH.dayNum >= 2 && sTH.dayNum <= 7) {
                             let start = Math.max(1, Math.floor(sTH.startPeriod));
-                            let end = Math.min(10, Math.floor(sTH.endPeriod));
+                            let end = Math.min(maxPeriods, Math.floor(sTH.endPeriod));
                             let span = Math.max(1, end - start + 1);
 
                             gridMap[sTH.dayNum][start] = {
@@ -828,7 +902,7 @@ javascript: (function tkbModule() {
                     btSchedules.forEach(sBT => {
                         if (sBT.dayNum >= 2 && sBT.dayNum <= 7) {
                             let start = Math.max(1, Math.floor(sBT.startPeriod));
-                            let end = Math.min(10, Math.floor(sBT.endPeriod));
+                            let end = Math.min(maxPeriods, Math.floor(sBT.endPeriod));
                             let span = Math.max(1, end - start + 1);
 
                             gridMap[sBT.dayNum][start] = {
@@ -845,8 +919,12 @@ javascript: (function tkbModule() {
 
             // Generate <tbody> HTML with rowspan
             let tbodyHtml = '';
-            for (let p = 1; p <= 10; p++) {
-                tbodyHtml += `<tr style="height: 32px;"><td style="border: 1px solid #CCCCCC; font-weight: normal; background: #fafafa;">Tiết ${p}</td>`;
+            for (let p = 1; p <= maxPeriods; p++) {
+                let timeStr = (PERIOD_TIMES[selectedCampus] && PERIOD_TIMES[selectedCampus][p]) ? PERIOD_TIMES[selectedCampus][p] : '';
+                tbodyHtml += `<tr style="height: 32px;">
+                    <td style="border: 1px solid #CCCCCC; font-weight: normal; background: #fafafa; padding: 4px; font-size: 11px; line-height: 1.2;">
+                        Tiết ${p}<br><span style="color: #666; font-size: 9px; font-weight: normal;">${timeStr}</span>
+                    </td>`;
                 for (let d = 2; d <= 7; d++) {
                     if (occupied[d][p]) {
                         // Covered by a previous rowspan -> skip cell
@@ -858,7 +936,7 @@ javascript: (function tkbModule() {
                         let span = cellData.span;
                         let palette = cellData.palette;
                         // Mark upcoming periods as occupied
-                        for (let k = p; k < p + span && k <= 10; k++) {
+                        for (let k = p; k < p + span && k <= maxPeriods; k++) {
                             occupied[d][k] = true;
                         }
                         tbodyHtml += `<td rowspan="${span}" style="border: 1px solid #CCCCCC; background: ${palette.bg}; color: ${palette.text}; vertical-align: middle; padding: 4px; font-size: 14px; text-align: center; line-height: 1.35; word-wrap: break-word; overflow-wrap: break-word; word-break: break-word;">
@@ -914,11 +992,12 @@ javascript: (function tkbModule() {
                     diaDiem: $(tds[10]).text().trim()
                 };
 
-                // Check max 25 credits limit
+                // Check max credits limit
+                let maxCredits = parseInt($('#gpaTkbMaxCredits').val()) || 25;
                 let currentSelectedList = Object.values(window._gpaSelectedClasses);
                 let currentTotalCredits = currentSelectedList.reduce((sum, item) => sum + (item.credit || 0), 0);
-                if (currentTotalCredits + newItem.credit > 25) {
-                    alert(`Không thể chọn môn này!\n\nSố tín chỉ đã chọn hiện tại: ${currentTotalCredits} TC.\nMôn vừa chọn (${newItem.courseName}) có ${newItem.credit} TC.\n\nNếu chọn thêm sẽ thành ${currentTotalCredits + newItem.credit} TC, vượt quá giới hạn tối đa 25 tín chỉ cho phép trong một học kỳ!`);
+                if (currentTotalCredits + newItem.credit > maxCredits) {
+                    alert(`Không thể chọn môn này!\n\nSố tín chỉ đã chọn hiện tại: ${currentTotalCredits} TC.\nMôn vừa chọn (${newItem.courseName}) có ${newItem.credit} TC.\n\nNếu chọn thêm sẽ thành ${currentTotalCredits + newItem.credit} TC, vượt quá giới hạn tối đa ${maxCredits} tín chỉ cho phép trong một học kỳ!`);
                     cbEl.prop('checked', false);
                     return;
                 }
@@ -948,11 +1027,12 @@ javascript: (function tkbModule() {
                 newItem.hasBT = !!btLmid;
 
                 function processSelection(itemToSelect) {
-                    // Check max 25 credits limit
+                    // Check max credits limit
+                    let maxCredits = parseInt($('#gpaTkbMaxCredits').val()) || 25;
                     let selectedList = Object.values(window._gpaSelectedClasses);
                     let totalCreds = selectedList.reduce((sum, item) => sum + (item.credit || 0), 0);
-                    if (totalCreds + (itemToSelect.credit || 0) > 25) {
-                        alert(`Không thể chọn môn này!\n\nSố tín chỉ đã chọn hiện tại: ${totalCreds} TC.\nMôn vừa chọn (${itemToSelect.courseName}) có ${itemToSelect.credit} TC.\n\nNếu chọn thêm sẽ thành ${totalCreds + itemToSelect.credit} TC, vượt quá giới hạn tối đa 25 tín chỉ cho phép trong một học kỳ!`);
+                    if (totalCreds + (itemToSelect.credit || 0) > maxCredits) {
+                        alert(`Không thể chọn môn này!\n\nSố tín chỉ đã chọn hiện tại: ${totalCreds} TC.\nMôn vừa chọn (${itemToSelect.courseName}) có ${itemToSelect.credit} TC.\n\nNếu chọn thêm sẽ thành ${totalCreds + itemToSelect.credit} TC, vượt quá giới hạn tối đa ${maxCredits} tín chỉ cho phép trong một học kỳ!`);
                         cbEl.prop('checked', false);
                         return;
                     }
