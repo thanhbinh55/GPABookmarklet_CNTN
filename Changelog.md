@@ -90,15 +90,15 @@ Besides that, I also add some minor modifications to this bookmaklet for ~~my~~ 
 ## Guideline
 
 - Step 1: You must be a HCMUS Student.
-- Step 2: Click **[this link](https://dreamywanderer.github.io/GPABookmarklet_Maintanence/)** to know more
+- Step 2: Click **[this link](https://thanhbinh55.github.io/GPABookmarklet_CNTN/)** to know more
 
 ````
-https://dreamywanderer.github.io/GPABookmarklet_Maintanence/
+https://thanhbinh55.github.io/GPABookmarklet_CNTN/
 ````
 
 ## Bugs Report and Suggestions
 
-Please go to [issues](https://github.com/DreamyWanderer/GPABookmarklet_Maintanence/issues) pages and provide those information. It will be great if you can assign them a suitable label as well!
+Please go to [issues](https://github.com/thanhbinh55/GPABookmarklet_CNTN/issues) pages and provide those information. It will be great if you can assign them a suitable label as well!
 
 ## List of new features & improvements (v2.1.0 by dorayakiiiiz)
 
