@@ -119,24 +119,58 @@ javascript: (function ketQuaDkhpModule() {
 
             let courses = collectPageCourses();
 
+            // Auto-detect campus from room names in the schedule
+            let defaultCampus = 'LT';
+            for (let i = 0; i < courses.length; i++) {
+                let schedules = parseSchedule(courses[i].scheduleStr);
+                let foundNvc = false;
+                for (let j = 0; j < schedules.length; j++) {
+                    let room = schedules[j].room;
+                    if (room) {
+                        let upperRoom = room.toUpperCase();
+                        if (upperRoom.includes('CS1') || upperRoom.includes('NVC') || upperRoom.includes('NGUYỄN VĂN CỪ')) {
+                            defaultCampus = 'NVC';
+                            foundNvc = true;
+                            break;
+                        }
+                        if (!upperRoom.includes('CS2') && !upperRoom.includes('NĐH') && /^[A-I]\./.test(room)) {
+                            defaultCampus = 'NVC';
+                            foundNvc = true;
+                            break;
+                        }
+                    }
+                }
+                if (foundNvc) break;
+            }
+
+            let savedCampus = localStorage.getItem('gpa_tkb_campus') || defaultCampus;
+
             let panelHtml = `
             <fieldset id="gpaTkbFieldSet" style="margin-top: 15px; margin-bottom: 15px; border: 1px solid #CCCCCC; padding: 10px 15px; background: menu;">
                 <legend>Thời khóa biểu</legend>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <div id="gpaTkbSummary" style="font-size: 14px; color: #000; font-weight: normal;">
-                        Tổng số: <span id="gpaTkbClassCount" style="font-weight: bold;">${courses.length} môn học</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
+                    <div id="gpaTkbSummary" style="font-size: 14px; color: #000; font-weight: normal; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <span>Tổng số: <span id="gpaTkbClassCount" style="font-weight: bold;">${courses.length} môn học</span></span>
+                        <span style="border-left: 1px solid #ccc; padding-left: 10px; margin-left: 10px; display: inline-flex; align-items: center; gap: 5px;">
+                            Cơ sở:
+                            <select id="gpaTkbCampus" style="padding: 2px 4px; border: 1px solid #ccc; border-radius: 3px; font-size: 13px; font-family: inherit; background: #fff; vertical-align: middle;">
+                                <option value="LT" ${savedCampus === 'LT' ? 'selected' : ''}>Linh Trung (10 tiết)</option>
+                                <option value="NVC" ${savedCampus === 'NVC' ? 'selected' : ''}>Nguyễn Văn Cừ (15 tiết)</option>
+                            </select>
+                        </span>
                     </div>
                 </div>
                 <div style="overflow-x: auto;">
                     <table id="gpaTkbGrid" style="width: 100%; table-layout: fixed; border-collapse: collapse; background: #fff; text-align: center; font-size: 14px; border: 1px solid #CCCCCC;">
                         <colgroup>
-                            <col style="width: 50px;">
-                            <col style="width: 15.83%;">
-                            <col style="width: 15.83%;">
-                            <col style="width: 15.83%;">
-                            <col style="width: 15.83%;">
-                            <col style="width: 15.83%;">
-                            <col style="width: 15.83%;">
+                            <col style="width: 65px;">
+                            <col style="width: 13.3%;">
+                            <col style="width: 13.3%;">
+                            <col style="width: 13.3%;">
+                            <col style="width: 13.3%;">
+                            <col style="width: 13.3%;">
+                            <col style="width: 13.3%;">
+                            <col style="width: 13.3%;">
                         </colgroup>
                         <thead>
                             <tr style="background: #f2f2f2; height: 28px; font-weight: normal;">
@@ -147,6 +181,7 @@ javascript: (function ketQuaDkhpModule() {
                                 <th style="border: 1px solid #CCCCCC; font-weight: normal;">Thứ 5</th>
                                 <th style="border: 1px solid #CCCCCC; font-weight: normal;">Thứ 6</th>
                                 <th style="border: 1px solid #CCCCCC; font-weight: normal;">Thứ 7</th>
+                                <th style="border: 1px solid #CCCCCC; font-weight: normal; color: red;">Chủ Nhật</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -162,6 +197,14 @@ javascript: (function ketQuaDkhpModule() {
                 $('#page-body-content').prepend(panelHtml);
             }
 
+            // Set up the campus change listener
+            $(document).off('change', '#gpaTkbCampus');
+            $(document).on('change', '#gpaTkbCampus', function () {
+                let val = $(this).val();
+                localStorage.setItem('gpa_tkb_campus', val);
+                renderTkbPanel();
+            });
+
             let courseColorMap = {};
             let colorIdx = 0;
             courses.forEach(item => {
@@ -172,13 +215,48 @@ javascript: (function ketQuaDkhpModule() {
                 }
             });
 
-            // Build Grid Map (Tiết 1-10 x Thứ 2-7)
+            // Determine max periods
+            let maxPeriods = (savedCampus === 'NVC') ? 15 : 10;
+
+            const PERIOD_TIMES = {
+                LT: {
+                    1: "07:30-08:20",
+                    2: "08:20-09:10",
+                    3: "09:10-10:00",
+                    4: "10:10-11:00",
+                    5: "11:00-11:50",
+                    6: "12:40-13:30",
+                    7: "13:30-14:20",
+                    8: "14:20-15:10",
+                    9: "15:20-16:10",
+                    10: "16:10-17:00"
+                },
+                NVC: {
+                    1: "07:00-07:50",
+                    2: "07:50-08:40",
+                    3: "08:40-09:30",
+                    4: "09:40-10:30",
+                    5: "10:30-11:20",
+                    6: "11:20-12:10",
+                    7: "12:50-13:40",
+                    8: "13:40-14:30",
+                    9: "14:30-15:20",
+                    10: "15:30-16:20",
+                    11: "16:20-17:10",
+                    12: "17:10-18:00",
+                    13: "18:00-18:50",
+                    14: "18:50-19:40",
+                    15: "19:40-20:30"
+                }
+            };
+
+            // Build Grid Map (Tiết 1 to maxPeriods x Thứ 2 to 8)
             let gridMap = {};
             let occupied = {};
-            for (let d = 2; d <= 7; d++) {
+            for (let d = 2; d <= 8; d++) {
                 gridMap[d] = {};
                 occupied[d] = {};
-                for (let p = 1; p <= 10; p++) {
+                for (let p = 1; p <= maxPeriods; p++) {
                     occupied[d][p] = false;
                 }
             }
@@ -189,9 +267,9 @@ javascript: (function ketQuaDkhpModule() {
                 let schedules = parseSchedule(item.scheduleStr);
 
                 schedules.forEach(s => {
-                    if (s.dayNum >= 2 && s.dayNum <= 7) {
+                    if (s.dayNum >= 2 && s.dayNum <= 8) {
                         let start = Math.max(1, Math.floor(s.startPeriod));
-                        let end = Math.min(10, Math.floor(s.endPeriod));
+                        let end = Math.min(maxPeriods, Math.floor(s.endPeriod));
                         let span = Math.max(1, end - start + 1);
 
                         gridMap[s.dayNum][start] = {
@@ -207,16 +285,20 @@ javascript: (function ketQuaDkhpModule() {
 
             // Build <tbody> HTML
             let tbodyHtml = '';
-            for (let p = 1; p <= 10; p++) {
-                tbodyHtml += `<tr style="height: 32px;"><td style="border: 1px solid #CCCCCC; font-weight: normal; background: #fafafa;">Tiết ${p}</td>`;
-                for (let d = 2; d <= 7; d++) {
+            for (let p = 1; p <= maxPeriods; p++) {
+                let timeStr = (PERIOD_TIMES[savedCampus] && PERIOD_TIMES[savedCampus][p]) ? PERIOD_TIMES[savedCampus][p] : '';
+                tbodyHtml += `<tr style="height: 32px;">
+                    <td style="border: 1px solid #CCCCCC; font-weight: normal; background: #fafafa; padding: 4px; font-size: 11px; line-height: 1.2;">
+                        Tiết ${p}<br><span style="color: #666; font-size: 9px; font-weight: normal;">${timeStr}</span>
+                    </td>`;
+                for (let d = 2; d <= 8; d++) {
                     if (occupied[d][p]) continue;
 
                     let cellData = gridMap[d][p];
                     if (cellData) {
                         let span = cellData.span;
                         let palette = cellData.palette;
-                        for (let k = p; k < p + span && k <= 10; k++) {
+                        for (let k = p; k < p + span && k <= maxPeriods; k++) {
                             occupied[d][k] = true;
                         }
                         tbodyHtml += `<td rowspan="${span}" style="border: 1px solid #CCCCCC; background: ${palette.bg}; color: ${palette.text}; vertical-align: middle; padding: 4px; font-size: 14px; text-align: center; line-height: 1.35; word-wrap: break-word; overflow-wrap: break-word; word-break: break-word;">
